@@ -50,7 +50,7 @@ def parse_response(response):
         return 200, content_type, body
     else:
         match((status[int], {content_type[str]: body[bytes]}), response)
-        assert match  # 
+        assert match  # a Matcher remembers the result of the last invocation
         return match.values()
 ```
 
