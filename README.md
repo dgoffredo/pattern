@@ -37,17 +37,13 @@ def parse_response(response):
     if match(None, response):
         return 200, None, None
     elif match(status[int], response):
-        status, *_, = match.values()
-        return status, None, None
+        return status.value, None, None
     elif match(body[bytes], response):
-        _, _, body = match.values()
-        return 200, 'text/html', body
+        return 200, 'text/html', body.value
     elif match((status[int], body[bytes]), response):
-        status, _, body = match.values()
-        return status, 'text/html', body
+        return status.value, 'text/html', body.value
     elif match({content_type[str]: body[bytes]}, response):
-        _, content_type, body = match.values()
-        return 200, content_type, body
+        return 200, content_type.value, body.value
     else:
         match((status[int], {content_type[str]: body[bytes]}), response)
         assert match  # a Matcher remembers the result of the last invocation
