@@ -1,3 +1,5 @@
+![](pattern.png)
+
 pattern
 =======
 simple pattern matching in Python
@@ -28,6 +30,7 @@ With pattern matching, things are less complicated (though still not ideal):
 ```python
 import pattern
 
+
 def parse_response(response):
     """Return `(status, content_type, body)` parsed from `response`."""
 
@@ -54,6 +57,7 @@ How
 ---
 ```python
 import pattern
+
 
 # A Matcher instance is an object that can be invoked as a function to match
 # a "pattern" against a "subject".  A Matcher can be associated with zero or
@@ -94,13 +98,10 @@ assert match({int: str}, {4: 'yep', 'extra': 'no problem'})
 assert match({1, 2, int}, {1, 2, 3, 4, 5})   # 1, 2, and any int are present
 assert not match({1, 2, int}, {1, 3, 5, 7})  # 2 is missing
 
-# If more than one element of a dict/set in the subject matches part of the
-# pattern, and if that part of the pattern is bound to a variable, then an
-# unspecified match is made (one of the matching values in the subject gets
-# bound to the variable, but this library doesn't specify which).
-if match({4: foo['str'], int: bar[str]}, {4: 'bob', 5: 'alice'}):
-    foo, bar = match.values()
-    # foo is "bob", but bar might be either "bob" or "alice"
+# Note that patterns within a set or dict exclude other patterns within the
+# same set or dict when matching part of the subject.  For example,
+assert not match({int, 2, 3}, {2, 3, 'nope'})
+# 2 and 3 are already "taken," so int doesn't have anything to match.
 
 # If a variable appears in a pattern without a `[<pattern>]` after it, then it
 # imposes no constraint on the matched value.  To impose a constraint on the
@@ -114,25 +115,13 @@ assert match
 foo, = match.values()
 assert foo == {1: 2}
 
-# One last feature is that if a variable appears more than once in a pattern,
-# then one occurrence constrains the sub-pattern that the variable will
-# match, and the other occurrences impose the constraint that the matched
-# value is exactly what was matched before.  For example:
-assert match({foo[int]: foo}, {3: 3})
-assert match({foo: foo[int]}, {3: 3})
-assert not match({foo[int]: foo}, {3: 4})  # 4 != 3
-
-# It is an error if more than one of the multiple appearances of the variable
-# imposes a constraint, unless they are exactly the same.  In principle the
-# library could choose the "most constrained" one, but that'd be complicated.
+# A variable may not appear more than once in a pattern.  It's just too hard.
 raised = False
 try:
-    match({foo[int]: foo[str]}, {1: 1})  # incompatible patterns for foo
+    match([foo, foo], [2, 2])
 except:
     raised = True
 assert raised
-
-assert match({foo[int]: foo[int]}, {1, 1})  # redundant patterns, but ok
 
 # The most annoying this about using this library is the number of times you
 # need to name the variables.  Initially, you must declare the variables
