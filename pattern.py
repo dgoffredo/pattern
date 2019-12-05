@@ -27,9 +27,6 @@ class Matcher:
     def __call__(self, pattern, subject):
         self.matched = False  # for starters
 
-        for var in self.vars:
-            var.reset()
-
         if any(count > 1 for var, count in _count_variables(pattern).items()):
             raise Exception('Pattern contains one or more variables that '
                             'appear more than once.  Each variable may appear '
@@ -51,7 +48,10 @@ def _count_variables(pattern):
         if isinstance(pattern, Variable):
             counts[pattern] += 1
             visit(pattern.pattern)
-        elif isinstance(pattern, abc.Set) or isinstance(pattern, abc.Sequence):
+        elif (    (isinstance(pattern, abc.Set) or
+                   isinstance(pattern, abc.Sequence)) and
+              not isinstance(pattern, abc.ByteString) and
+              not isinstance(pattern, str)):
             for subpattern in pattern:
                 visit(subpattern)
         elif isinstance(pattern, abc.Mapping):
@@ -74,7 +74,9 @@ def _match(pattern, subject):
             return False, {}
         else:
             return _match_mapping(pattern, subject)
-    elif isinstance(pattern, abc.Sequence):
+    elif (    isinstance(pattern, abc.Sequence) and
+          not isinstance(pattern, abc.ByteString) and
+          not isinstance(pattern, str)):
         # of similar types (e.g. distinguish between tuple and list, but not
         # between tuple and NamedTuple).
         if not (isinstance(subject, type(pattern)) or isinstance(pattern, type(subject))):
@@ -225,9 +227,6 @@ UNMATCHED = _Symbol('UNMATCHED')
 
 class Variable:
     def __init__(self):
-        self.reset()
-
-    def reset(self):
         self.pattern = ANY
         self.value = UNMATCHED
 
