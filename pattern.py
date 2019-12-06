@@ -5,6 +5,11 @@ from collections import defaultdict
 import collections.abc as abc
 
 
+def match(pattern, subject):
+    """whether `subject` matches `pattern`"""
+    return Matcher()(pattern, subject)
+
+
 class Matcher:
     def __init__(self, num_variables=0):
         self.vars = tuple(Variable() for _ in range(num_variables))
@@ -41,6 +46,13 @@ class Matcher:
         return self.matched
 
 
+def _is_listy(value):
+    """whether `value` is a sequence, but not a `str` or similar."""
+    return (    isinstance(value, abc.Sequence) and
+            not isinstance(value, abc.ByteString) and
+            not isinstance(value, str))
+
+
 def _count_variables(pattern):
     counts = defaultdict(int)
 
@@ -48,10 +60,7 @@ def _count_variables(pattern):
         if isinstance(pattern, Variable):
             counts[pattern] += 1
             visit(pattern.pattern)
-        elif (    (isinstance(pattern, abc.Set) or
-                   isinstance(pattern, abc.Sequence)) and
-              not isinstance(pattern, abc.ByteString) and
-              not isinstance(pattern, str)):
+        elif isinstance(pattern, abc.Set) or _is_listy(pattern):
             for subpattern in pattern:
                 visit(subpattern)
         elif isinstance(pattern, abc.Mapping):
@@ -61,6 +70,11 @@ def _count_variables(pattern):
         
     visit(pattern)
     return counts
+
+
+def _are_similar(left, right):
+    """whether either of `left` and `right` is derived from the other"""
+    return isinstance(left, type(right)) or isinstance(right, type(left))
 
 
 def _match(pattern, subject):
@@ -74,12 +88,10 @@ def _match(pattern, subject):
             return False, {}
         else:
             return _match_mapping(pattern, subject)
-    elif (    isinstance(pattern, abc.Sequence) and
-          not isinstance(pattern, abc.ByteString) and
-          not isinstance(pattern, str)):
+    elif _is_listy(pattern):
         # of similar types (e.g. distinguish between tuple and list, but not
         # between tuple and NamedTuple).
-        if not (isinstance(subject, type(pattern)) or isinstance(pattern, type(subject))):
+        if not _are_similar(subject, pattern):
             return False, {}
         # of the same length
         if len(subject) != len(pattern):
@@ -103,8 +115,8 @@ def _match(pattern, subject):
 
 
 def _match_sequence(pattern, subject):
-    assert isinstance(pattern, abc.Sequence)
-    assert isinstance(subject, abc.Sequence)
+    assert _is_listy(pattern)
+    assert _is_listy(subject)
     assert len(pattern) == len(subject)
 
     combined_bindings = {}
