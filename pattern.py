@@ -180,6 +180,10 @@ def _match_unordered(pattern, subject):
                 # there is no match overall.
                 return False, {}
 
+            # reset me (since we're going back to the previous pattern)
+            s[p] = 0
+
+            # and go back to the previous pattern
             p -= 1
             used.remove(s[p])
             s[p] += 1
